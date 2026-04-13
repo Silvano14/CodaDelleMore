@@ -168,11 +168,7 @@ class _EventsPageState extends State<EventsPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.event_busy,
-                      size: 64,
-                      color: Colors.grey[400],
-                    ),
+                    Icon(Icons.event_busy, size: 64, color: Colors.grey[400]),
                     const SizedBox(height: 16),
                     Text(
                       'Nessun evento disponibile',
@@ -185,10 +181,7 @@ class _EventsPageState extends State<EventsPage> {
                     const SizedBox(height: 8),
                     Text(
                       'Non ci sono eventi per il periodo selezionato',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[500],
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -504,15 +497,6 @@ class _EventsPageState extends State<EventsPage> {
                             ),
                             child: Divider(),
                           ),
-                          if (isLoggedIn)
-                            _buildDrawerItem(
-                              icon: Icons.settings,
-                              title: 'Impostazioni',
-                              onTap: () {
-                                Navigator.pop(context);
-                                // TODO: Navigare alle impostazioni
-                              },
-                            ),
                           _buildDrawerItem(
                             icon: Icons.info_outline,
                             title: 'Info',
@@ -606,10 +590,7 @@ class _EventsPageState extends State<EventsPage> {
                         children: [
                           Builder(
                             builder: (context) => IconButton(
-                              icon: const Icon(
-                                Icons.menu,
-                                color: Colors.white,
-                              ),
+                              icon: const Icon(Icons.menu, color: Colors.white),
                               onPressed: () {
                                 Scaffold.of(context).openDrawer();
                               },
@@ -646,10 +627,7 @@ class _EventsPageState extends State<EventsPage> {
                   const SizedBox(width: 8),
                   _buildFilterChip('Oggi', TimeFilter.today),
                   const SizedBox(width: 8),
-                  _buildFilterChip(
-                    'Questa settimana',
-                    TimeFilter.thisWeek,
-                  ),
+                  _buildFilterChip('Questa settimana', TimeFilter.thisWeek),
                   const SizedBox(width: 8),
                   _buildFilterChip('Questo mese', TimeFilter.thisMonth),
                   const SizedBox(width: 8),
@@ -660,9 +638,7 @@ class _EventsPageState extends State<EventsPage> {
           ),
 
           // Contenuto scrollabile con pull-to-refresh
-          Expanded(
-            child: _buildContent(),
-          ),
+          Expanded(child: _buildContent()),
         ],
       ),
     );
@@ -1298,14 +1274,15 @@ class HeaderClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     final path = Path();
-    path.lineTo(0, size.height - 40);
+    path.lineTo(0, size.height - 50);
 
-    // Curva più morbida e naturale
+    // Curva più pronunciata
     path.quadraticBezierTo(
       size.width / 2, // punto di controllo x (centro)
-      size.height + 10, // punto di controllo y (fondo più pronunciato)
+      size.height +
+          35, // punto di controllo y (più in basso = curva più pronunciata)
       size.width, // punto finale x
-      size.height - 40, // punto finale y
+      size.height - 50, // punto finale y
     );
 
     path.lineTo(size.width, 0);
