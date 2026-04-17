@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import 'event_form_page.dart';
+import 'event_bookings_page.dart';
 
 class AdminEventsPage extends StatefulWidget {
   const AdminEventsPage({super.key});
@@ -16,7 +17,7 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
         .from('events')
         .select()
         .order('event_date', ascending: false)
-        .order('event_time', ascending: false);
+        .order('start_event_time', ascending: false);
 
     return (response as List).cast<Map<String, dynamic>>();
   }
@@ -46,7 +47,10 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
     }
   }
 
-  Future<void> _confirmDelete(BuildContext context, Map<String, dynamic> event) async {
+  Future<void> _confirmDelete(
+    BuildContext context,
+    Map<String, dynamic> event,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -111,26 +115,16 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.event_busy,
-                    size: 80,
-                    color: Colors.grey[400],
-                  ),
+                  Icon(Icons.event_busy, size: 80, color: Colors.grey[400]),
                   const SizedBox(height: 16),
                   Text(
                     'Nessun evento creato',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Inizia creando il tuo primo evento',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[500],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                   ),
                 ],
               ),
@@ -143,8 +137,14 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
             itemBuilder: (context, index) {
               final event = events[index];
               final eventDate = DateTime.parse(event['event_date']);
-              final formattedDate = DateFormat('dd MMM yyyy', 'it_IT').format(eventDate);
-              final eventTime = event['event_time'].toString().substring(0, 5);
+              final formattedDate = DateFormat(
+                'dd MMM yyyy',
+                'it_IT',
+              ).format(eventDate);
+              final eventTime = event['start_event_time'].toString().substring(
+                0,
+                5,
+              );
               final isPublished = event['is_published'] as bool? ?? true;
               final isPast = eventDate.isBefore(DateTime.now());
 
@@ -174,7 +174,9 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
                     child: event['cover_image'] == null
                         ? Icon(
                             Icons.event,
-                            color: isPast ? Colors.grey[600] : const Color(0xFF2C2942),
+                            color: isPast
+                                ? Colors.grey[600]
+                                : const Color(0xFF2C2942),
                           )
                         : null,
                   ),
@@ -186,7 +188,9 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
-                            decoration: isPast ? TextDecoration.lineThrough : null,
+                            decoration: isPast
+                                ? TextDecoration.lineThrough
+                                : null,
                             color: isPast ? Colors.grey : null,
                           ),
                         ),
@@ -218,7 +222,11 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
+                          Icon(
+                            Icons.calendar_today,
+                            size: 14,
+                            color: Colors.grey[600],
+                          ),
                           const SizedBox(width: 4),
                           Text('$formattedDate alle $eventTime'),
                         ],
@@ -227,7 +235,11 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
                         const SizedBox(height: 2),
                         Row(
                           children: [
-                            Icon(Icons.location_on, size: 14, color: Colors.grey[600]),
+                            Icon(
+                              Icons.location_on,
+                              size: 14,
+                              color: Colors.grey[600],
+                            ),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
@@ -253,11 +265,28 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
                         if (result == true && mounted) {
                           setState(() {}); // Refresh
                         }
+                      } else if (value == 'bookings') {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => EventBookingsPage(event: event),
+                          ),
+                        );
                       } else if (value == 'delete') {
                         await _confirmDelete(context, event);
                       }
                     },
                     itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'bookings',
+                        child: Row(
+                          children: [
+                            Icon(Icons.people, size: 20),
+                            SizedBox(width: 8),
+                            Text('Prenotazioni'),
+                          ],
+                        ),
+                      ),
                       const PopupMenuItem(
                         value: 'edit',
                         child: Row(
@@ -293,9 +322,7 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
         onPressed: () async {
           final result = await Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => const EventFormPage(),
-            ),
+            MaterialPageRoute(builder: (context) => const EventFormPage()),
           );
           if (result == true && mounted) {
             setState(() {}); // Refresh
