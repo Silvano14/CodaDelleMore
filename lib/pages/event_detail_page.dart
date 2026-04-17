@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import '../constants/colors.dart';
 
 class EventDetailPage extends StatefulWidget {
   final Map<String, dynamic> event;
@@ -117,25 +118,11 @@ class _EventDetailPageState extends State<EventDetailPage> {
   }
 
   Color _getGradientColor(int index) {
-    final colors = [
-      [const Color(0xFF6B4CE6), const Color(0xFF9B6EE8)],
-      [const Color(0xFFFF6B9D), const Color(0xFFFFA06B)],
-      [const Color(0xFF00C9FF), const Color(0xFF92FE9D)],
-      [const Color(0xFFFF416C), const Color(0xFFFF4B2B)],
-      [const Color(0xFF4776E6), const Color(0xFF8E54E9)],
-    ];
-    return colors[index % colors.length][0];
+    return AppColors.cardGradients[index % AppColors.cardGradients.length][0];
   }
 
   Color _getGradientEndColor(int index) {
-    final colors = [
-      [const Color(0xFF6B4CE6), const Color(0xFF9B6EE8)],
-      [const Color(0xFFFF6B9D), const Color(0xFFFFA06B)],
-      [const Color(0xFF00C9FF), const Color(0xFF92FE9D)],
-      [const Color(0xFFFF416C), const Color(0xFFFF4B2B)],
-      [const Color(0xFF4776E6), const Color(0xFF8E54E9)],
-    ];
-    return colors[index % colors.length][1];
+    return AppColors.cardGradients[index % AppColors.cardGradients.length][1];
   }
 
   @override
@@ -465,10 +452,10 @@ class _EventDetailPageState extends State<EventDetailPage> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF2C2942).withValues(alpha: 0.05),
+                        color: AppColors.textDark.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: const Color(0xFF2C2942).withValues(alpha: 0.1),
+                          color: AppColors.textDark.withValues(alpha: 0.1),
                         ),
                       ),
                       child: Column(

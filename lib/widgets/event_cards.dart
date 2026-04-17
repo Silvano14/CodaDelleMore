@@ -1,23 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../pages/event_detail_page.dart';
+import '../constants/colors.dart';
 
 /// Helper mixin per i colori gradiente delle card
 mixin EventCardGradientColors {
-  static const List<List<Color>> _gradientColors = [
-    [Color(0xFF6B4CE6), Color(0xFF9B6EE8)],
-    [Color(0xFFFF6B9D), Color(0xFFFFA06B)],
-    [Color(0xFF00C9FF), Color(0xFF92FE9D)],
-    [Color(0xFFFF416C), Color(0xFFFF4B2B)],
-    [Color(0xFF4776E6), Color(0xFF8E54E9)],
-  ];
-
   Color getGradientColor(int index) {
-    return _gradientColors[index % _gradientColors.length][0];
+    return AppColors.cardGradients[index % AppColors.cardGradients.length][0];
   }
 
   Color getGradientEndColor(int index) {
-    return _gradientColors[index % _gradientColors.length][1];
+    return AppColors.cardGradients[index % AppColors.cardGradients.length][1];
   }
 }
 
