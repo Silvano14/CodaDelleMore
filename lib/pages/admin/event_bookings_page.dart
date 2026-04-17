@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import '../../constants/colors.dart';
 
 class EventBookingsPage extends StatefulWidget {
   final Map<String, dynamic> event;
@@ -61,15 +62,8 @@ class _EventBookingsPageState extends State<EventBookingsPage> {
   }
 
   Color _getGradientColor() {
-    final colors = [
-      const Color(0xFF6B4CE6),
-      const Color(0xFFFF6B9D),
-      const Color(0xFF00C9FF),
-      const Color(0xFFFF416C),
-      const Color(0xFF4776E6),
-    ];
     final cardIndex = widget.event['id']?.hashCode ?? 0;
-    return colors[cardIndex % colors.length];
+    return AppColors.cardGradients[cardIndex % AppColors.cardGradients.length][0];
   }
 
   @override
@@ -86,7 +80,7 @@ class _EventBookingsPageState extends State<EventBookingsPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Prenotazioni'),
-        backgroundColor: const Color(0xFF2C2942),
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
       body: Column(

@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import 'event_form_page.dart';
 import 'event_bookings_page.dart';
+import '../../constants/colors.dart';
 
 class AdminEventsPage extends StatefulWidget {
   const AdminEventsPage({super.key});
@@ -85,7 +86,7 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gestione Eventi'),
-        backgroundColor: const Color(0xFF2C2942),
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
@@ -163,7 +164,7 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
                       borderRadius: BorderRadius.circular(8),
                       color: isPast
                           ? Colors.grey[300]
-                          : const Color(0xFF2C2942).withValues(alpha: 0.1),
+                          : AppColors.primary.withValues(alpha: 0.1),
                       image: event['cover_image'] != null
                           ? DecorationImage(
                               image: NetworkImage(event['cover_image']),
@@ -176,7 +177,7 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
                             Icons.event,
                             color: isPast
                                 ? Colors.grey[600]
-                                : const Color(0xFF2C2942),
+                                : AppColors.primary,
                           )
                         : null,
                   ),
@@ -330,7 +331,7 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
         },
         icon: const Icon(Icons.add),
         label: const Text('Nuovo Evento'),
-        backgroundColor: const Color(0xFF2C2942),
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
     );

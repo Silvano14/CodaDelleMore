@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../constants/colors.dart';
 
 class EventFormPage extends StatefulWidget {
   final Map<String, dynamic>? event;
@@ -595,7 +596,7 @@ class _EventFormPageState extends State<EventFormPage> {
                 leading: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2C2942).withValues(alpha: 0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(Icons.image, color: Color(0xFF2C2942)),
@@ -611,7 +612,7 @@ class _EventFormPageState extends State<EventFormPage> {
                 leading: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2C2942).withValues(alpha: 0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(Icons.videocam, color: Color(0xFF2C2942)),
@@ -635,7 +636,7 @@ class _EventFormPageState extends State<EventFormPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.event != null ? 'Modifica Evento' : 'Nuovo Evento'),
-        backgroundColor: const Color(0xFF2C2942),
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
       body: Form(
@@ -845,7 +846,7 @@ class _EventFormPageState extends State<EventFormPage> {
                             _bookingsEnabled = value;
                           });
                         },
-                        activeTrackColor: const Color(0xFF2C2942),
+                        activeTrackColor: AppColors.primary,
                       ),
                     ],
                   ),
@@ -993,7 +994,7 @@ class _EventFormPageState extends State<EventFormPage> {
             ElevatedButton(
               onPressed: _isLoading ? null : _saveEvent,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2C2942),
+                backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
