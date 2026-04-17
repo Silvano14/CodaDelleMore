@@ -41,14 +41,20 @@ CREATE TABLE public.events (
   description text,
   location text,
   event_date date NOT NULL,
-  event_time time without time zone NOT NULL,
+  start_event_time time without time zone NOT NULL, -- Ora inizio evento
+  end_event_time time without time zone, -- Ora fine evento (opzionale)
   cover_image text, -- URL dell'immagine di copertina
+  cover_video text, -- URL del video di copertina (alternativo all'immagine)
   created_by uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
   created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
   updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
   is_published boolean NOT NULL DEFAULT true, -- Permette agli admin di salvare bozze
   max_participants integer, -- Numero massimo di partecipanti (opzionale)
   category text, -- Categoria evento (es: "Concerto", "Sport", "Cultura")
+  contact_phone text, -- Numero di telefono per info/prenotazioni
+  price decimal(10,2), -- Prezzo dell'evento (opzionale)
+  booking_deadline date, -- Data limite per le prenotazioni
+  bookings_enabled boolean NOT NULL DEFAULT true, -- Permette di abilitare/disabilitare prenotazioni
   CONSTRAINT events_pkey PRIMARY KEY (id)
 );
 
@@ -73,6 +79,21 @@ CREATE TABLE public.user_events (
 
 CREATE INDEX idx_user_events_user ON public.user_events(user_id);
 CREATE INDEX idx_user_events_event ON public.user_events(event_id);
+
+-- =====================================================
+-- TABELLA BOOKINGS (prenotazioni eventi)
+-- =====================================================
+CREATE TABLE public.bookings (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  event_id uuid NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT bookings_pkey PRIMARY KEY (id),
+  CONSTRAINT bookings_unique UNIQUE (user_id, event_id) -- Un utente può prenotare un evento una sola volta
+);
+
+CREATE INDEX idx_bookings_user ON public.bookings(user_id);
+CREATE INDEX idx_bookings_event ON public.bookings(event_id);
 
 -- =====================================================
 -- TABELLA NOTIFICATIONS (notifiche)
@@ -126,6 +147,7 @@ INSERT INTO public.event_categories (name, icon, color) VALUES
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.event_categories ENABLE ROW LEVEL SECURITY;
 
@@ -170,6 +192,23 @@ CREATE POLICY "Users can update their own user_events"
 
 CREATE POLICY "Users can delete their own user_events"
   ON public.user_events FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- BOOKINGS: gli utenti possono gestire le proprie prenotazioni, admin possono vedere tutte
+CREATE POLICY "Users can view their own bookings"
+  ON public.bookings FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can view all bookings"
+  ON public.bookings FOR SELECT
+  USING (auth.uid() IN (SELECT id FROM public.profiles WHERE role = 'admin'));
+
+CREATE POLICY "Users can create their own bookings"
+  ON public.bookings FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own bookings"
+  ON public.bookings FOR DELETE
   USING (auth.uid() = user_id);
 
 -- NOTIFICATIONS: gli utenti possono vedere e aggiornare solo le proprie notifiche
