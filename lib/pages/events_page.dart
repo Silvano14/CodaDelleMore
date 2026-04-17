@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'login_page.dart';
 import '../models/profile.dart';
 import '../widgets/event_cards.dart';
+import '../constants/colors.dart';
 import 'admin/admin_events_page.dart';
 
 class EventsPage extends StatefulWidget {
@@ -219,7 +220,7 @@ class _EventsPageState extends State<EventsPage> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(primary: Color(0xFF2C2942)),
+            colorScheme: const ColorScheme.light(primary: AppColors.primary),
           ),
           child: child!,
         );
@@ -245,9 +246,9 @@ class _EventsPageState extends State<EventsPage> {
           _selectedFilter = filter;
         });
       },
-      selectedColor: const Color(0xFF2C2942),
+      selectedColor: AppColors.primary,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : const Color(0xFF2C2942),
+        color: isSelected ? Colors.white : AppColors.primary,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
       showCheckmark: false,
@@ -275,9 +276,9 @@ class _EventsPageState extends State<EventsPage> {
       onSelected: (bool selected) {
         _showCustomDatePicker();
       },
-      selectedColor: const Color(0xFF2C2942),
+      selectedColor: AppColors.primary,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : const Color(0xFF2C2942),
+        color: isSelected ? Colors.white : AppColors.primary,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
       showCheckmark: false,
@@ -294,20 +295,20 @@ class _EventsPageState extends State<EventsPage> {
     return ListTile(
       leading: Icon(
         icon,
-        color: selected ? const Color(0xFF2C2942) : Colors.grey.shade700,
+        color: selected ? AppColors.primary : Colors.grey.shade700,
       ),
       title: Text(
         title,
         style: TextStyle(
           fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-          color: selected ? const Color(0xFF2C2942) : Colors.grey.shade900,
+          color: selected ? AppColors.primary : Colors.grey.shade900,
         ),
       ),
       trailing: badge != null
           ? Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFF2C2942),
+                color: AppColors.primary,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -321,7 +322,7 @@ class _EventsPageState extends State<EventsPage> {
             )
           : null,
       selected: selected,
-      selectedTileColor: const Color(0xFF2C2942).withValues(alpha: 0.1),
+      selectedTileColor: AppColors.primary.withValues(alpha: 0.1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       onTap: onTap,
@@ -358,7 +359,7 @@ class _EventsPageState extends State<EventsPage> {
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [Color(0xFF2C2942), Color(0xFF4776E6)],
+                          colors: [AppColors.primary, AppColors.accent],
                         ),
                       ),
                       child: SafeArea(
@@ -555,7 +556,7 @@ class _EventsPageState extends State<EventsPage> {
                                   icon: const Icon(Icons.login),
                                   label: const Text('Login'),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF2C2942),
+                                    backgroundColor: AppColors.primary,
                                     foregroundColor: Colors.white,
                                     minimumSize: const Size(
                                       double.infinity,
@@ -582,7 +583,7 @@ class _EventsPageState extends State<EventsPage> {
           ClipPath(
             clipper: HeaderClipper(),
             child: Container(
-              color: const Color(0xFF2C2942),
+              color: AppColors.primary,
               child: SafeArea(
                 bottom: false,
                 child: Column(
