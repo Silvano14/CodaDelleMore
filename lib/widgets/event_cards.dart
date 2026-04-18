@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../pages/event_detail_page.dart';
 import '../constants/colors.dart';
 
@@ -15,30 +16,144 @@ mixin EventCardGradientColors {
 }
 
 /// Card a larghezza piena per la lista eventi principale
-class FullWidthEventCard extends StatelessWidget with EventCardGradientColors {
+class FullWidthEventCard extends StatefulWidget {
   final Map<String, dynamic> event;
+  final VoidCallback? onFavoriteChanged;
 
-  FullWidthEventCard({super.key, required this.event});
+  const FullWidthEventCard({
+    super.key,
+    required this.event,
+    this.onFavoriteChanged,
+  });
+
+  @override
+  State<FullWidthEventCard> createState() => _FullWidthEventCardState();
+}
+
+class _FullWidthEventCardState extends State<FullWidthEventCard>
+    with SingleTickerProviderStateMixin, EventCardGradientColors {
+  bool _isFavorite = false;
+  bool _isLoading = false;
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _scaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.3), weight: 50),
+      TweenSequenceItem(tween: Tween(begin: 1.3, end: 1.0), weight: 50),
+    ]).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+    _loadFavoriteStatus();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadFavoriteStatus() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final response = await Supabase.instance.client
+          .from('user_events')
+          .select('is_favorite')
+          .eq('user_id', user.id)
+          .eq('event_id', widget.event['id'])
+          .maybeSingle();
+
+      if (mounted && response != null) {
+        setState(() {
+          _isFavorite = response['is_favorite'] as bool? ?? false;
+        });
+      }
+    } catch (e) {
+      // Ignora errori di caricamento
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Effettua il login per salvare i preferiti'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    final newFavoriteStatus = !_isFavorite;
+
+    try {
+      // Upsert: inserisce o aggiorna
+      await Supabase.instance.client.from('user_events').upsert({
+        'user_id': user.id,
+        'event_id': widget.event['id'],
+        'is_favorite': newFavoriteStatus,
+      }, onConflict: 'user_id,event_id');
+
+      if (mounted) {
+        setState(() {
+          _isFavorite = newFavoriteStatus;
+        });
+        _animationController.forward(from: 0);
+        widget.onFavoriteChanged?.call();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Errore: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final eventDate = DateTime.parse(event['event_date']);
+    final eventDate = DateTime.parse(widget.event['event_date']);
     final formattedDay = DateFormat('dd').format(eventDate);
     final formattedMonth = DateFormat(
       'MMM',
       'it_IT',
     ).format(eventDate).substring(0, 3);
-    final startTime = event['start_event_time'].toString().substring(0, 5);
-    final endTime = event['end_event_time'] != null
-        ? event['end_event_time'].toString().substring(0, 5)
+    final startTime = widget.event['start_event_time'].toString().substring(0, 5);
+    final endTime = widget.event['end_event_time'] != null
+        ? widget.event['end_event_time'].toString().substring(0, 5)
         : null;
     final eventTimeDisplay = endTime != null
         ? '$startTime - $endTime'
         : startTime;
-    final cardIndex = event['id']?.hashCode ?? 0;
-    final coverImage = event['cover_image'] as String?;
-    final coverVideo = event['cover_video'] as String?;
-    final maxParticipants = event['max_participants'] as int?;
+    final cardIndex = widget.event['id']?.hashCode ?? 0;
+    final coverImage = widget.event['cover_image'] as String?;
+    final coverVideo = widget.event['cover_video'] as String?;
+    final maxParticipants = widget.event['max_participants'] as int?;
     final hasVideo = coverVideo != null && coverVideo.isNotEmpty;
 
     return Container(
@@ -50,7 +165,7 @@ class FullWidthEventCard extends StatelessWidget with EventCardGradientColors {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => EventDetailPage(event: event),
+              builder: (context) => EventDetailPage(event: widget.event),
             ),
           );
         },
@@ -173,20 +288,39 @@ class FullWidthEventCard extends StatelessWidget with EventCardGradientColors {
                   ],
                 ),
               ),
-              // Cuore
+              // Cuore con animazione
               Positioned(
                 top: 12,
                 right: 12,
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.favorite_border,
-                    size: 22,
-                    color: Color(0xFF2C2942),
+                child: GestureDetector(
+                  onTap: _toggleFavorite,
+                  child: AnimatedBuilder(
+                    animation: _scaleAnimation,
+                    builder: (context, child) {
+                      return Transform.scale(
+                        scale: _scaleAnimation.value,
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: _isFavorite ? Colors.red.shade50 : Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Icon(
+                                  _isFavorite ? Icons.favorite : Icons.favorite_border,
+                                  size: 22,
+                                  color: _isFavorite ? Colors.red : const Color(0xFF2C2942),
+                                ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -216,7 +350,7 @@ class FullWidthEventCard extends StatelessWidget with EventCardGradientColors {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        event['title'] ?? 'Senza titolo',
+                        widget.event['title'] ?? 'Senza titolo',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -241,7 +375,7 @@ class FullWidthEventCard extends StatelessWidget with EventCardGradientColors {
                               fontSize: 13,
                             ),
                           ),
-                          if (event['location'] != null) ...[
+                          if (widget.event['location'] != null) ...[
                             const SizedBox(width: 16),
                             const Icon(
                               Icons.location_on,
@@ -251,7 +385,7 @@ class FullWidthEventCard extends StatelessWidget with EventCardGradientColors {
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                event['location'],
+                                widget.event['location'],
                                 style: const TextStyle(
                                   color: Colors.white70,
                                   fontSize: 13,

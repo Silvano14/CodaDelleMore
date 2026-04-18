@@ -1,4 +1,4 @@
-package com.example.da_dalt
+package com.codadellemore.app
 
 import io.flutter.embedding.android.FlutterActivity
 

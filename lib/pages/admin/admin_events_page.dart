@@ -13,6 +13,8 @@ class AdminEventsPage extends StatefulWidget {
 }
 
 class _AdminEventsPageState extends State<AdminEventsPage> {
+  bool _hasChanges = false;
+
   Future<List<Map<String, dynamic>>> _fetchAllEvents() async {
     final response = await Supabase.instance.client
         .from('events')
@@ -34,6 +36,7 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
             backgroundColor: Colors.green,
           ),
         );
+        _hasChanges = true;
         setState(() {}); // Refresh
       }
     } catch (error) {
@@ -83,11 +86,21 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        Navigator.pop(context, _hasChanges);
+      },
+      child: Scaffold(
+        appBar: AppBar(
         title: const Text('Gestione Eventi'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context, _hasChanges),
+        ),
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _fetchAllEvents(),
@@ -264,6 +277,7 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
                           ),
                         );
                         if (result == true && mounted) {
+                          _hasChanges = true;
                           setState(() {}); // Refresh
                         }
                       } else if (value == 'bookings') {
@@ -326,6 +340,7 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
             MaterialPageRoute(builder: (context) => const EventFormPage()),
           );
           if (result == true && mounted) {
+            _hasChanges = true;
             setState(() {}); // Refresh
           }
         },
@@ -333,6 +348,7 @@ class _AdminEventsPageState extends State<AdminEventsPage> {
         label: const Text('Nuovo Evento'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
+      ),
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import 'login_page.dart';
+import 'favorites_page.dart';
 import '../models/profile.dart';
 import '../widgets/event_cards.dart';
 import '../constants/colors.dart';
@@ -458,7 +459,12 @@ class _EventsPageState extends State<EventsPage> {
                               title: 'Preferiti',
                               onTap: () {
                                 Navigator.pop(context);
-                                // TODO: Navigare alla pagina preferiti
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const FavoritesPage(),
+                                  ),
+                                );
                               },
                             ),
                             _buildDrawerItem(
@@ -482,15 +488,18 @@ class _EventsPageState extends State<EventsPage> {
                             _buildDrawerItem(
                               icon: Icons.admin_panel_settings,
                               title: 'Gestione Eventi',
-                              onTap: () {
+                              onTap: () async {
                                 Navigator.pop(context);
-                                Navigator.push(
+                                final result = await Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) =>
                                         const AdminEventsPage(),
                                   ),
                                 );
+                                if (result == true && mounted) {
+                                  _refreshEvents();
+                                }
                               },
                             ),
                           ],
