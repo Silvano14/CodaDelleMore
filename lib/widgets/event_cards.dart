@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../pages/event_detail_page.dart';
 import '../constants/colors.dart';
+import '../utils/page_transitions.dart';
 
 /// Helper mixin per i colori gradiente delle card
 mixin EventCardGradientColors {
@@ -164,8 +165,8 @@ class _FullWidthEventCardState extends State<FullWidthEventCard>
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => EventDetailPage(event: widget.event),
+            SlideUpTransition(
+              page: EventDetailPage(event: widget.event),
             ),
           );
         },
@@ -438,8 +439,8 @@ class PopularEventCard extends StatelessWidget with EventCardGradientColors {
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => EventDetailPage(event: event),
+            SlideUpTransition(
+              page: EventDetailPage(event: event),
             ),
           );
         },
@@ -624,8 +625,8 @@ class GridEventCard extends StatelessWidget with EventCardGradientColors {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => EventDetailPage(event: event),
+          SlideUpTransition(
+            page: EventDetailPage(event: event),
           ),
         );
       },

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/event_cards.dart';
+import '../widgets/animations/animated_widgets.dart';
 import '../constants/colors.dart';
 
 class FavoritesPage extends StatefulWidget {
@@ -115,26 +116,34 @@ class _FavoritesPageState extends State<FavoritesPage> {
 
     if (_favoriteEvents.isEmpty) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.favorite_border, size: 80, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              'Nessun evento nei preferiti',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[600],
+        child: FadeSlideIn(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              PulseAnimation(
+                child: Icon(
+                  Icons.favorite_border,
+                  size: 80,
+                  color: Colors.grey[400],
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Tocca il cuore su un evento per aggiungerlo',
-              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-              textAlign: TextAlign.center,
-            ),
-          ],
+              const SizedBox(height: 16),
+              Text(
+                'Nessun evento nei preferiti',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Tocca il cuore su un evento per aggiungerlo',
+                style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -145,9 +154,12 @@ class _FavoritesPageState extends State<FavoritesPage> {
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         itemCount: _favoriteEvents.length,
         itemBuilder: (context, index) {
-          return FullWidthEventCard(
-            event: _favoriteEvents[index],
-            onFavoriteChanged: _loadFavorites,
+          return FadeSlideIn(
+            delay: Duration(milliseconds: index * 80),
+            child: FullWidthEventCard(
+              event: _favoriteEvents[index],
+              onFavoriteChanged: _loadFavorites,
+            ),
           );
         },
       ),

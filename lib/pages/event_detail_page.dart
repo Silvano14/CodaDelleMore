@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../constants/colors.dart';
+import '../utils/page_transitions.dart';
+import '../widgets/video_header.dart';
+import 'login_page.dart';
 
 class EventDetailPage extends StatefulWidget {
   final Map<String, dynamic> event;
@@ -117,6 +121,29 @@ class _EventDetailPageState extends State<EventDetailPage> {
     }
   }
 
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+    if (await canLaunchUrl(phoneUri)) {
+      await launchUrl(phoneUri);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Impossibile avviare la chiamata'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _navigateToLogin() {
+    Navigator.push(
+      context,
+      FadeSlideTransition(page: const LoginPage()),
+    );
+  }
+
   Color _getGradientColor(int index) {
     return AppColors.cardGradients[index % AppColors.cardGradients.length][0];
   }
@@ -127,6 +154,8 @@ class _EventDetailPageState extends State<EventDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final user = Supabase.instance.client.auth.currentUser;
+    final isLoggedIn = user != null;
     final event = widget.event;
     final eventDate = DateTime.parse(event['event_date']);
     final formattedDate = DateFormat('dd MMMM yyyy', 'it_IT').format(eventDate);
@@ -153,7 +182,14 @@ class _EventDetailPageState extends State<EventDetailPage> {
     final isBookingOpen = bookingsEnabled &&
         (bookingDeadline == null || bookingDeadline.isAfter(DateTime.now()));
 
-    return Scaffold(
+    return GestureDetector(
+      onHorizontalDragEnd: (details) {
+        // Swipe da sinistra a destra per tornare indietro
+        if (details.primaryVelocity != null && details.primaryVelocity! > 300) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
       backgroundColor: Colors.white,
       // Pulsante Prenota fisso in basso (solo se prenotazioni abilitate)
       bottomNavigationBar: isBookingOpen
@@ -170,69 +206,161 @@ class _EventDetailPageState extends State<EventDetailPage> {
                     ),
                   ],
                 ),
-                child: Row(
-                  children: [
-                    // Info prezzo
-                    if (price != null)
-                      Expanded(
-                        child: Text(
-                          '${price.toStringAsFixed(price.truncateToDouble() == price ? 0 : 2)} €',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: _getGradientColor(cardIndex),
-                          ),
-                        ),
-                      )
-                    else
-                      const Spacer(),
-                    // Pulsante Prenota
-                    ElevatedButton(
-                      onPressed: _isLoadingBooking ? null : _toggleBooking,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _isBooked
-                            ? Colors.grey[400]
-                            : _getGradientColor(cardIndex),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 32,
-                          vertical: 16,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: _isLoadingBooking
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
+                child: isLoggedIn
+                    ? Row(
+                        children: [
+                          // Info prezzo
+                          if (price != null)
+                            Expanded(
+                              child: Text(
+                                '${price.toStringAsFixed(price.truncateToDouble() == price ? 0 : 2)} €',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: _getGradientColor(cardIndex),
+                                ),
                               ),
                             )
-                          : Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  _isBooked
-                                      ? Icons.check_circle
-                                      : Icons.book_online,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  _isBooked ? 'Prenotato' : 'Prenota',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
+                          else
+                            const Spacer(),
+                          // Pulsante Prenota
+                          ElevatedButton(
+                            onPressed:
+                                _isLoadingBooking ? null : _toggleBooking,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _isBooked
+                                  ? Colors.grey[400]
+                                  : _getGradientColor(cardIndex),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 32,
+                                vertical: 16,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: _isLoadingBooking
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        _isBooked
+                                            ? Icons.check_circle
+                                            : Icons.book_online,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        _isBooked ? 'Prenotato' : 'Prenota',
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            children: [
+                              if (price != null)
+                                Expanded(
+                                  child: Text(
+                                    '${price.toStringAsFixed(price.truncateToDouble() == price ? 0 : 2)} €',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: _getGradientColor(cardIndex),
+                                    ),
+                                  ),
+                                )
+                              else
+                                const Spacer(),
+                              // Pulsante Prenota disabilitato
+                              ElevatedButton(
+                                onPressed: null,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.grey[300],
+                                  foregroundColor: Colors.grey[600],
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 32,
+                                    vertical: 16,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
-                              ],
-                            ),
-                    ),
-                  ],
-                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.lock_outline,
+                                      size: 20,
+                                      color: Colors.grey[600],
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Prenota',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Effettua il ',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: _navigateToLogin,
+                                child: Text(
+                                  'login',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: _getGradientColor(cardIndex),
+                                    decoration: TextDecoration.underline,
+                                    decorationColor:
+                                        _getGradientColor(cardIndex),
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                ' per prenotare',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
               ),
             )
           : null, // Se prenotazioni disabilitate, non mostrare nulla
@@ -242,64 +370,101 @@ class _EventDetailPageState extends State<EventDetailPage> {
             expandedHeight: 300,
             pinned: true,
             flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: coverImage == null
-                      ? LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            _getGradientColor(cardIndex),
-                            _getGradientEndColor(cardIndex),
-                          ],
-                        )
-                      : null,
-                  image: coverImage != null
-                      ? DecorationImage(
-                          image: NetworkImage(coverImage),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
-                ),
-                child: Stack(
-                  children: [
-                    // Overlay scuro per leggibilità del titolo
-                    Positioned.fill(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withValues(alpha: 0.7),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 20,
-                      left: 20,
-                      right: 20,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+              background: hasVideo
+                  ? EventHeaderBackground(
+                      videoUrl: coverVideo,
+                      imageUrl: coverImage,
+                      gradientColors: [
+                        _getGradientColor(cardIndex),
+                        _getGradientEndColor(cardIndex),
+                      ],
+                      overlay: Stack(
                         children: [
-                          Text(
-                            event['title'] ?? 'Senza titolo',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              height: 1.2,
+                          // Overlay scuro per leggibilità del titolo
+                          Positioned.fill(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.black.withValues(alpha: 0.7),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 20,
+                            left: 20,
+                            right: 20,
+                            child: Text(
+                              event['title'] ?? 'Senza titolo',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                height: 1.2,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : Container(
+                      decoration: BoxDecoration(
+                        gradient: coverImage == null
+                            ? LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  _getGradientColor(cardIndex),
+                                  _getGradientEndColor(cardIndex),
+                                ],
+                              )
+                            : null,
+                        image: coverImage != null
+                            ? DecorationImage(
+                                image: NetworkImage(coverImage),
+                                fit: BoxFit.cover,
+                              )
+                            : null,
+                      ),
+                      child: Stack(
+                        children: [
+                          // Overlay scuro per leggibilità del titolo
+                          Positioned.fill(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.black.withValues(alpha: 0.7),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 20,
+                            left: 20,
+                            right: 20,
+                            child: Text(
+                              event['title'] ?? 'Senza titolo',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                height: 1.2,
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ],
-                ),
-              ),
             ),
             leading: IconButton(
               icon: Container(
@@ -610,7 +775,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                           if (contactPhone != null) ...[
                             const Divider(height: 24),
                             InkWell(
-                              onTap: () {},
+                              onTap: () => _makePhoneCall(contactPhone),
                               borderRadius: BorderRadius.circular(12),
                               child: Container(
                                 padding: const EdgeInsets.all(16),
@@ -644,35 +809,6 @@ class _EventDetailPageState extends State<EventDetailPage> {
                       ),
                     ),
                   ],
-                  if (hasVideo) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.red.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.videocam, color: Colors.red),
-                          SizedBox(width: 12),
-                          Text(
-                            'Questo evento include un video',
-                            style: TextStyle(
-                              color: Colors.red,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
                   const SizedBox(height: 24),
                   const Text(
                     'Info',
@@ -693,6 +829,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

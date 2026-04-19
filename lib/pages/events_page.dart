@@ -5,6 +5,8 @@ import 'login_page.dart';
 import 'favorites_page.dart';
 import '../models/profile.dart';
 import '../widgets/event_cards.dart';
+import '../widgets/animations/animated_widgets.dart';
+import '../utils/page_transitions.dart';
 import '../constants/colors.dart';
 import 'admin/admin_events_page.dart';
 
@@ -170,26 +172,34 @@ class _EventsPageState extends State<EventsPage> {
             SizedBox(
               height: MediaQuery.of(context).size.height * 0.5,
               child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.event_busy, size: 64, color: Colors.grey[400]),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Nessun evento disponibile',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey[600],
+                child: FadeSlideIn(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      PulseAnimation(
+                        child: Icon(
+                          Icons.event_busy,
+                          size: 64,
+                          color: Colors.grey[400],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Non ci sono eventi per il periodo selezionato',
-                      style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+                      const SizedBox(height: 16),
+                      Text(
+                        'Nessun evento disponibile',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Non ci sono eventi per il periodo selezionato',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -204,7 +214,10 @@ class _EventsPageState extends State<EventsPage> {
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         itemCount: filteredEvents.length,
         itemBuilder: (context, index) {
-          return FullWidthEventCard(event: filteredEvents[index]);
+          return FadeSlideIn(
+            delay: Duration(milliseconds: index * 80),
+            child: FullWidthEventCard(event: filteredEvents[index]),
+          );
         },
       ),
     );
@@ -239,20 +252,33 @@ class _EventsPageState extends State<EventsPage> {
 
   Widget _buildFilterChip(String label, TimeFilter filter) {
     final isSelected = _selectedFilter == filter;
-    return FilterChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (bool selected) {
+    return AnimatedPressable(
+      onTap: () {
         setState(() {
           _selectedFilter = filter;
         });
       },
-      selectedColor: AppColors.primary,
-      labelStyle: TextStyle(
-        color: isSelected ? Colors.white : AppColors.primary,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: AppColors.primary,
+            width: isSelected ? 0 : 1.5,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : AppColors.primary,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            fontSize: 14,
+          ),
+        ),
       ),
-      showCheckmark: false,
     );
   }
 
@@ -264,25 +290,40 @@ class _EventsPageState extends State<EventsPage> {
           '${DateFormat('dd/MM').format(_customStartDate!)} - ${DateFormat('dd/MM').format(_customEndDate!)}';
     }
 
-    return FilterChip(
-      label: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(label),
-          const SizedBox(width: 4),
-          const Icon(Icons.calendar_today, size: 14),
-        ],
+    return AnimatedPressable(
+      onTap: _showCustomDatePicker,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: AppColors.primary,
+            width: isSelected ? 0 : 1.5,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : AppColors.primary,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Icon(
+              Icons.calendar_today,
+              size: 14,
+              color: isSelected ? Colors.white : AppColors.primary,
+            ),
+          ],
+        ),
       ),
-      selected: isSelected,
-      onSelected: (bool selected) {
-        _showCustomDatePicker();
-      },
-      selectedColor: AppColors.primary,
-      labelStyle: TextStyle(
-        color: isSelected ? Colors.white : AppColors.primary,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-      ),
-      showCheckmark: false,
     );
   }
 
@@ -461,8 +502,8 @@ class _EventsPageState extends State<EventsPage> {
                                 Navigator.pop(context);
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const FavoritesPage(),
+                                  FadeSlideTransition(
+                                    page: const FavoritesPage(),
                                   ),
                                 );
                               },
@@ -492,9 +533,8 @@ class _EventsPageState extends State<EventsPage> {
                                 Navigator.pop(context);
                                 final result = await Navigator.push(
                                   context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const AdminEventsPage(),
+                                  FadeSlideTransition(
+                                    page: const AdminEventsPage(),
                                   ),
                                 );
                                 if (result == true && mounted) {
@@ -557,8 +597,8 @@ class _EventsPageState extends State<EventsPage> {
                                     Navigator.pop(context);
                                     Navigator.push(
                                       context,
-                                      MaterialPageRoute(
-                                        builder: (context) => const LoginPage(),
+                                      FadeSlideTransition(
+                                        page: const LoginPage(),
                                       ),
                                     );
                                   },
@@ -588,45 +628,77 @@ class _EventsPageState extends State<EventsPage> {
       ),
       body: Column(
         children: [
-          // Header fisso
-          ClipPath(
-            clipper: HeaderClipper(),
-            child: Container(
-              color: AppColors.primary,
-              child: SafeArea(
-                bottom: false,
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
-                      child: Row(
-                        children: [
-                          Builder(
-                            builder: (context) => IconButton(
-                              icon: const Icon(Icons.menu, color: Colors.white),
-                              onPressed: () {
-                                Scaffold.of(context).openDrawer();
-                              },
-                            ),
-                          ),
-                          const Spacer(),
-                          const Text(
-                            'Eventi',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const Spacer(),
-                          const SizedBox(width: 48),
-                        ],
-                      ),
-                    ),
-                  ],
+          // Header con onde multiple per effetto profondità
+          Stack(
+            children: [
+              // Onda di sfondo (più alta, colore accent)
+              ClipPath(
+                clipper: BackWaveClipper(),
+                child: Container(
+                  height: 180,
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withValues(alpha: 0.25),
+                  ),
                 ),
               ),
-            ),
+              // Onda media (colore primary light)
+              ClipPath(
+                clipper: MiddleWaveClipper(),
+                child: Container(
+                  height: 165,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight.withValues(alpha: 0.5),
+                  ),
+                ),
+              ),
+              // Onda principale con contenuto
+              ClipPath(
+                clipper: FrontWaveClipper(),
+                child: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [AppColors.primary, AppColors.primaryDark],
+                    ),
+                  ),
+                  child: SafeArea(
+                    bottom: false,
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
+                          child: Row(
+                            children: [
+                              Builder(
+                                builder: (context) => IconButton(
+                                  icon:
+                                      const Icon(Icons.menu, color: Colors.white),
+                                  onPressed: () {
+                                    Scaffold.of(context).openDrawer();
+                                  },
+                                ),
+                              ),
+                              const Spacer(),
+                              const Text(
+                                'Eventi',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const Spacer(),
+                              const SizedBox(width: 48),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
 
           // Filtri temporali fissi
@@ -658,19 +730,79 @@ class _EventsPageState extends State<EventsPage> {
   }
 }
 
-class HeaderClipper extends CustomClipper<Path> {
+/// Onda di sfondo - più alta e curva più ampia
+class BackWaveClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    path.lineTo(0, size.height - 70);
+
+    // Curva più ampia e alta
+    path.quadraticBezierTo(
+      size.width * 0.25,
+      size.height - 20,
+      size.width * 0.5,
+      size.height - 40,
+    );
+    path.quadraticBezierTo(
+      size.width * 0.75,
+      size.height - 60,
+      size.width,
+      size.height - 30,
+    );
+
+    path.lineTo(size.width, 0);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
+/// Onda media - curva intermedia
+class MiddleWaveClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    path.lineTo(0, size.height - 55);
+
+    // Curva media con andamento diverso
+    path.quadraticBezierTo(
+      size.width * 0.35,
+      size.height + 15,
+      size.width * 0.6,
+      size.height - 35,
+    );
+    path.quadraticBezierTo(
+      size.width * 0.85,
+      size.height - 75,
+      size.width,
+      size.height - 45,
+    );
+
+    path.lineTo(size.width, 0);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
+/// Onda principale in primo piano
+class FrontWaveClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     final path = Path();
     path.lineTo(0, size.height - 50);
 
-    // Curva più pronunciata
+    // Curva pronunciata e fluida
     path.quadraticBezierTo(
-      size.width / 2, // punto di controllo x (centro)
-      size.height +
-          35, // punto di controllo y (più in basso = curva più pronunciata)
-      size.width, // punto finale x
-      size.height - 50, // punto finale y
+      size.width / 2,
+      size.height + 40,
+      size.width,
+      size.height - 50,
     );
 
     path.lineTo(size.width, 0);

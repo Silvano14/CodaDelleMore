@@ -11,6 +11,9 @@ dependencies:
   intl: ^0.19.0
   flutter_dotenv: ^5.1.0
   image_picker: ^1.0.7
+  url_launcher: ^6.2.5
+  video_player: ^2.8.6
+  chewie: ^1.8.1
   flutter:
     sdk: flutter
 
@@ -18,6 +21,30 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_native_splash: ^2.4.0
+
+flutter_native_splash:
+  color: "#2C2942"
+  image: assets/images/logo.png
+  color_dark: "#2C2942"
+  image_dark: assets/images/logo.png
+
+  # Larghezza immagine su iOS (in punti, default ~100)
+  ios_content_mode: scaleAspectFit
+
+  android_12:
+    color: "#2C2942"
+    image: assets/images/logo.png
+    icon_background_color: "#2C2942"
+    color_dark: "#2C2942"
+    image_dark: assets/images/logo.png
+    icon_background_color_dark: "#2C2942"
+
+  ios: true
+  android: true
+
+  # Rimuove il fullscreen per mostrare l'immagine più grande
+  fullscreen: false
 
 flutter:
   uses-material-design: true
