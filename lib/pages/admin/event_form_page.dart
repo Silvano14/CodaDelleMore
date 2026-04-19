@@ -6,6 +6,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../constants/colors.dart';
+import '../../services/notification_service.dart';
+import '../../widgets/event_form/media_picker_widget.dart';
+import '../../widgets/event_form/bookings_section_widget.dart';
 
 class EventFormPage extends StatefulWidget {
   final Map<String, dynamic>? event;
@@ -15,8 +18,6 @@ class EventFormPage extends StatefulWidget {
   @override
   State<EventFormPage> createState() => _EventFormPageState();
 }
-
-enum MediaType { none, image, video }
 
 class _EventFormPageState extends State<EventFormPage> {
   final _formKey = GlobalKey<FormState>();
@@ -322,6 +323,33 @@ class _EventFormPageState extends State<EventFormPage> {
     });
   }
 
+  /// Dialog per chiedere se notificare gli utenti della modifica
+  Future<bool?> _showNotifyUsersDialog() async {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Notificare gli utenti?'),
+        content: const Text(
+          'Vuoi inviare una notifica a tutti gli utenti per informarli della modifica?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('No'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Notifica'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _saveEvent() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -381,13 +409,34 @@ class _EventFormPageState extends State<EventFormPage> {
         'created_by': userId,
       };
 
+      final eventTitle = _titleController.text.trim();
+
       if (widget.event != null) {
+        // UPDATE
         await Supabase.instance.client
             .from('events')
             .update(eventData)
             .eq('id', widget.event!['id']);
+
+        // Chiedi se notificare gli utenti
+        if (mounted) {
+          final shouldNotify = await _showNotifyUsersDialog();
+          if (shouldNotify == true) {
+            await NotificationService.sendUpdateNotifications(widget.event!['id'], eventTitle);
+          }
+        }
       } else {
-        await Supabase.instance.client.from('events').insert(eventData);
+        // CREATE - ottieni l'ID del nuovo evento
+        final response = await Supabase.instance.client
+            .from('events')
+            .insert(eventData)
+            .select('id')
+            .single();
+
+        final newEventId = response['id'] as String;
+
+        // Notifica automatica a tutti gli utenti
+        await NotificationService.sendNewEventNotifications(newEventId, eventTitle);
       }
 
       if (mounted) {
@@ -422,212 +471,15 @@ class _EventFormPageState extends State<EventFormPage> {
   }
 
   Widget _buildMediaPicker() {
-    final hasMedia =
-        _selectedMedia != null ||
-        (_existingImageUrl != null && _existingImageUrl!.isNotEmpty) ||
-        (_existingVideoUrl != null && _existingVideoUrl!.isNotEmpty);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Media di copertina',
-          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          width: double.infinity,
-          height: 200,
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[300]!),
-          ),
-          child: hasMedia
-              ? Stack(
-                  children: [
-                    // Preview del media
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: _mediaType == MediaType.video
-                          ? Container(
-                              width: double.infinity,
-                              height: double.infinity,
-                              color: Colors.black87,
-                              child: const Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.videocam,
-                                    size: 64,
-                                    color: Colors.white70,
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    'Video selezionato',
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          : _selectedMedia != null
-                          ? Image.file(
-                              _selectedMedia!,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: double.infinity,
-                            )
-                          : Image.network(
-                              _existingImageUrl!,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: double.infinity,
-                            ),
-                    ),
-                    // Loading overlay
-                    if (_isUploadingMedia)
-                      Container(
-                        color: Colors.black54,
-                        child: const Center(
-                          child: CircularProgressIndicator(color: Colors.white),
-                        ),
-                      ),
-                    // Bottoni
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Row(
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.6),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: IconButton(
-                              icon: const Icon(
-                                Icons.edit,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                              onPressed: () => _showMediaPickerDialog(),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.red.withValues(alpha: 0.8),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: IconButton(
-                              icon: const Icon(
-                                Icons.delete,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                              onPressed: _removeMedia,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                )
-              : InkWell(
-                  onTap: () => _showMediaPickerDialog(),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.add_photo_alternate_outlined,
-                            size: 40,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(width: 16),
-                          Icon(
-                            Icons.videocam_outlined,
-                            size: 40,
-                            color: Colors.grey[400],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Tocca per aggiungere immagine o video',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                      ),
-                    ],
-                  ),
-                ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Lascia vuoto per usare un colore casuale',
-          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-        ),
-      ],
-    );
-  }
-
-  void _showMediaPickerDialog() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Seleziona tipo di media',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 20),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.image, color: Color(0xFF2C2942)),
-                ),
-                title: const Text('Immagine'),
-                subtitle: const Text('Seleziona dalla galleria'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage();
-                },
-              ),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.videocam, color: Color(0xFF2C2942)),
-                ),
-                title: const Text('Video'),
-                subtitle: const Text('Max 2 minuti'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickVideo();
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
+    return MediaPickerWidget(
+      selectedMedia: _selectedMedia,
+      existingImageUrl: _existingImageUrl,
+      existingVideoUrl: _existingVideoUrl,
+      mediaType: _mediaType,
+      isUploading: _isUploadingMedia,
+      onPickImage: _pickImage,
+      onPickVideo: _pickVideo,
+      onRemove: _removeMedia,
     );
   }
 
@@ -812,137 +664,18 @@ class _EventFormPageState extends State<EventFormPage> {
             const SizedBox(height: 24),
 
             // Sezione Prenotazioni
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[200]!),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.book_online,
-                        color: Colors.grey[700],
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Prenotazioni',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey[800],
-                        ),
-                      ),
-                      const Spacer(),
-                      Switch(
-                        value: _bookingsEnabled,
-                        onChanged: (value) {
-                          setState(() {
-                            _bookingsEnabled = value;
-                          });
-                        },
-                        activeTrackColor: AppColors.primary,
-                      ),
-                    ],
-                  ),
-                  Text(
-                    _bookingsEnabled
-                        ? 'Le prenotazioni sono aperte'
-                        : 'Le prenotazioni sono chiuse',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: _bookingsEnabled ? Colors.green : Colors.red,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Contatto telefono
-                  TextFormField(
-                    controller: _contactPhoneController,
-                    decoration: InputDecoration(
-                      labelText: 'Telefono per prenotazioni',
-                      hintText: 'es. 346 1234567',
-                      prefixIcon: const Icon(Icons.phone),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      filled: true,
-                      fillColor: Colors.white,
-                    ),
-                    keyboardType: TextInputType.phone,
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Prezzo e Scadenza in row
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _priceController,
-                          decoration: InputDecoration(
-                            labelText: 'Prezzo',
-                            hintText: 'es. 15',
-                            prefixIcon: const Icon(Icons.euro),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            filled: true,
-                            fillColor: Colors.white,
-                          ),
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(
-                              RegExp(r'^\d*[,.]?\d{0,2}'),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: InkWell(
-                          onTap: _selectBookingDeadline,
-                          child: InputDecorator(
-                            decoration: InputDecoration(
-                              labelText: 'Scadenza',
-                              prefixIcon: const Icon(Icons.event_busy),
-                              suffixIcon: _bookingDeadline != null
-                                  ? IconButton(
-                                      icon: const Icon(Icons.clear, size: 18),
-                                      onPressed: _clearBookingDeadline,
-                                    )
-                                  : null,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              filled: true,
-                              fillColor: Colors.white,
-                            ),
-                            child: Text(
-                              _bookingDeadline != null
-                                  ? DateFormat(
-                                      'dd/MM',
-                                    ).format(_bookingDeadline!)
-                                  : 'Nessuna',
-                              style: TextStyle(
-                                color: _bookingDeadline != null
-                                    ? Colors.black
-                                    : Colors.grey,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+            BookingsSectionWidget(
+              bookingsEnabled: _bookingsEnabled,
+              onBookingsEnabledChanged: (value) {
+                setState(() {
+                  _bookingsEnabled = value;
+                });
+              },
+              contactPhoneController: _contactPhoneController,
+              priceController: _priceController,
+              bookingDeadline: _bookingDeadline,
+              onSelectDeadline: _selectBookingDeadline,
+              onClearDeadline: _clearBookingDeadline,
             ),
             const SizedBox(height: 16),
 

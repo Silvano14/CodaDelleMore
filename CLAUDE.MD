@@ -5,6 +5,7 @@ Da dalt è una applicazione che si occupa di propagare il nome dell'azienda (cod
 ## Gestione codice sorgente
 
 I file non devono avere un numero di righe che supera il 600, non è un limite assoluto ma se lo si supera bisogna pensare se il componente lo si può dividere in più file. Serve per poter facilitare la lettura e la gestione dei file, inoltre aiuta la IA a non dover leggere file troppo grandi consumando troppi token.
+Fai il controllo dopo ogni sviluppo e chiedi se si vuole fare refactoring
 
 ## Database
 
